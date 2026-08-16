@@ -4,28 +4,659 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>The Analyst Question Book</title>
-  <!-- React & Babel CDNs -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body style="margin: 0; background: #0A121C;">
   <div id="root"></div>
 
   <script type="text/babel">
-    // 1. Storage shim for persistence
+    // Storage persistence fallback
     window.storage = {
       get: async (key) => ({ value: localStorage.getItem(key) }),
       set: async (key, val) => localStorage.setItem(key, val),
     };
 
-    // 2. React hooks injection
     const { useState, useEffect, useMemo, useCallback } = React;
 
-    // 3. Paste the entire code here (remove the top `import React...` line)
-    // [PASTE BANK, APP COMPONENT, ETC. HERE]
+    /* ============================ QUESTION BANK ============================ */
+    const BANK = [
+      // ACCOUNTING
+      { id: "a1", t: "Accounting", d: 1, q: "Walk me through the three financial statements and how they link.", a: "Income statement shows revenue through to net income over a period. Balance sheet is a snapshot of assets, liabilities and equity at a point in time. Cash flow statement bridges net income to actual cash across operating, investing and financing.\n\nLinks: net income is the top line of the cash flow statement and flows into retained earnings on the balance sheet. Ending cash from the cash flow statement becomes the cash line on the balance sheet. Non-cash charges like D&A hit the income statement and are added back in cash flow, while reducing the corresponding asset on the balance sheet." },
+      { id: "a2", t: "Accounting", d: 1, q: "Depreciation increases by $10. Walk me through the three statements. Assume a 25% tax rate.", a: "Income statement: operating income falls $10, net income falls $7.50.\n\nCash flow: start at −$7.50, add back $10 of depreciation, so cash increases $2.50.\n\nBalance sheet: cash up $2.50, PP&E down $10, so assets fall $7.50. Retained earnings fall $7.50. Balanced." },
+      { id: "a3", t: "Accounting", d: 1, q: "What's the difference between cash and accrual accounting?", a: "Cash accounting records revenue and expenses when cash physically moves. Accrual records revenue when it's earned and expenses when they're incurred, regardless of cash timing.\n\nAccrual is what public companies use under GAAP/IFRS, which is exactly why net income and cash flow diverge, and why the cash flow statement exists." },
+      { id: "a4", t: "Accounting", d: 1, q: "What is working capital, and what does an increase in working capital do to cash?", a: "Operating working capital is non-cash current assets minus non-debt current liabilities: receivables plus inventory plus prepaid, less payables and accrued expenses.\n\nAn increase is a use of cash. You've either tied up more money in inventory and receivables, or paid down what you owed suppliers. Cash goes down." },
+      { id: "a5", t: "Accounting", d: 1, q: "You buy $100 of inventory with cash. What happens on the statements?", a: "Nothing on the income statement — inventory is capitalised, not expensed, until it's sold.\n\nCash flow: inventory increases $100, a use of cash, so cash falls $100 in operating.\n\nBalance sheet: inventory up $100, cash down $100. Assets unchanged, so it balances. The expense only appears later, in COGS, when the goods sell." },
+      { id: "a6", t: "Accounting", d: 1, q: "Why does net income differ from cash flow?", a: "Four main reasons: non-cash charges like D&A, stock comp and impairments reduce net income without touching cash; working capital swings move cash without touching net income; capex is a cash outflow that never hits the income statement directly; and financing items like debt raises, repayments and buybacks move cash with no income statement effect." },
+      { id: "a7", t: "Accounting", d: 1, q: "Where does interest expense appear, and how does it affect the statements?", a: "Below operating income on the income statement, so it reduces pre-tax income and net income but not EBIT or EBITDA. It's a cash expense, so no add-back in cash flow, though PIK interest is added back as non-cash. The cash payment reduces cash; any accrued but unpaid interest sits as a liability." },
+      { id: "a8", t: "Accounting", d: 1, q: "What is deferred revenue and what does it do to cash?", a: "Cash collected before the good or service is delivered — a liability, not revenue, until you perform. Think an annual software subscription paid upfront.\n\nWhen it's collected, cash rises and the liability rises, with no income statement impact. As the service is delivered, the liability unwinds into revenue with no further cash movement. It's why software companies can show cash flow well ahead of reported revenue." },
+      { id: "a9", t: "Accounting", d: 1, q: "Accounts payable vs. accrued expenses — what's the difference?", a: "Both are near-term operating liabilities. Payables are invoiced amounts owed to suppliers that you haven't paid yet. Accrued expenses are costs already incurred where no invoice has arrived — wages earned but unpaid, interest accrued, utilities used.\n\nMechanically they behave identically in working capital: an increase in either is a source of cash." },
+      { id: "a10", t: "Accounting", d: 1, q: "What is goodwill and when is it created?", a: "An intangible asset created in an acquisition, equal to the purchase price above the fair market value of the target's identifiable net assets after any write-ups.\n\nIt isn't amortised under US GAAP; it's tested for impairment at least annually. If the acquired business underperforms, you write it down, which is a non-cash charge." },
+      { id: "a11", t: "Accounting", d: 2, q: "Inventory is written down by $100. Walk me through the statements at a 25% tax rate.", a: "Income statement: a $100 write-down, either in COGS or as a separate charge. Pre-tax income falls $100, net income falls $75.\n\nCash flow: start at −$75, add back the $100 non-cash write-down, so cash increases $25 from the tax shield.\n\nBalance sheet: cash up $25, inventory down $100, assets down $75. Retained earnings down $75." },
+      { id: "a12", t: "Accounting", d: 2, q: "You buy $100 of PP&E using debt. Walk me through the statements, then a year later.", a: "At purchase: no income statement impact. Cash flow shows $100 capex outflow in investing and $100 debt raised in financing, netting to zero. Balance sheet shows PP&E up $100 and debt up $100.\n\nA year later, say 10-year straight-line depreciation and 10% interest: depreciation of $10 and interest of $10 reduce pre-tax income by $20, net income by $15 at 25%. Cash flow starts at −$15, adds back $10 depreciation, so cash falls $5. Balance sheet: cash down $5, PP&E down $10, assets down $15; retained earnings down $15." },
+      { id: "a13", t: "Accounting", d: 2, q: "A company accrues $10 of employee bonuses but hasn't paid them. Walk me through it.", a: "Income statement: compensation expense of $10, net income down $7.50 at 25%.\n\nCash flow: start at −$7.50, then accrued liabilities increase $10, a source of cash, so cash rises $2.50 — the tax saving, since no cash bonus has gone out.\n\nBalance sheet: cash up $2.50, accrued liabilities up $10; retained earnings down $7.50." },
+      { id: "a14", t: "Accounting", d: 2, q: "What creates a deferred tax liability?", a: "A timing difference where book income exceeds taxable income now and reverses later. The classic case is accelerated depreciation for tax purposes and straight-line for books: you pay less cash tax today, so you record a liability for tax you'll owe in future.\n\nAsset write-ups in a stock acquisition also create a DTL, because the step-up boosts book D&A but isn't deductible for tax." },
+      { id: "a15", t: "Accounting", d: 2, q: "LIFO vs. FIFO in a rising-price environment — what happens to income and cash?", a: "LIFO charges the newest, most expensive units to COGS, so COGS is higher, reported net income lower, and ending inventory on the balance sheet is stale and understated. FIFO does the opposite.\n\nBecause LIFO is permitted for US tax purposes, it produces lower taxable income and therefore more actual cash. Lower reported profit, higher cash." },
+      { id: "a16", t: "Accounting", d: 2, q: "How does lease accounting work now, and why do bankers care?", a: "Under ASC 842 and IFRS 16, essentially all leases longer than a year go on the balance sheet as a right-of-use asset and a lease liability.\n\nFinance leases split expense into amortisation and interest, so they help EBITDA. Operating leases under US GAAP keep a single straight-line operating expense, so EBITDA is unaffected. Bankers care because it changes comparability across companies and whether you treat lease liabilities as debt in enterprise value." },
+      { id: "a17", t: "Accounting", d: 2, q: "How is stock-based compensation treated, and why is it added back in cash flow?", a: "It's a real operating expense on the income statement, reducing net income. It's added back on the cash flow statement because the company paid in shares, not cash.\n\nThe catch: it dilutes existing shareholders, so treating it as free is wrong in valuation. Many practitioners now deduct it in unlevered FCF or account for it through the share count rather than adding it back and forgetting it." },
+      { id: "a18", t: "Accounting", d: 2, q: "A company issues $100 of stock and then repurchases $50 of stock. What happens?", a: "No income statement impact from either.\n\nCash flow financing: +$100 from issuance, −$50 for the buyback, net +$50 cash.\n\nBalance sheet: cash up $50; common stock and APIC up $100, treasury stock of −$50 within equity, so equity is up $50 net. Balanced. Share count rises then falls, which matters for EPS." },
+      { id: "a19", t: "Accounting", d: 2, q: "Why can negative working capital be a good sign?", a: "It means the business collects from customers before paying suppliers — customers are funding operations. Supermarkets, restaurants and subscription businesses often run this way, and growth actually generates cash rather than consuming it.\n\nIt's only a bad sign when it's driven by distress, i.e. stretching payables because the company can't pay." },
+      { id: "a20", t: "Accounting", d: 2, q: "If you could only look at one statement to judge a company, which would you pick?", a: "The cash flow statement. It shows the cash actually generated, is hardest to manipulate with accounting policy, and implicitly reveals a lot about the other two — net income at the top, working capital and capex in the middle, financing activity at the bottom.\n\nCaveat worth voicing: it tells you nothing about leverage or solvency, so in practice you'd want the balance sheet next." },
+      { id: "a21", t: "Accounting", d: 3, q: "A company sells equipment with a book value of $100 for $150 cash. Walk me through it.", a: "Income statement: a $50 gain, so pre-tax income up $50 and net income up $37.50 at 25%.\n\nCash flow: start at +$37.50, subtract the $50 gain in operating because it isn't operating cash, so operating is −$12.50. Investing shows the full $150 of proceeds. Net cash up $137.50.\n\nBalance sheet: cash up $137.50, PP&E down $100, so assets up $37.50; retained earnings up $37.50." },
+      { id: "a22", t: "Accounting", d: 3, q: "A company writes down $200 of goodwill. Walk me through the statements.", a: "Income statement: a $200 impairment charge. Goodwill impairment is generally not tax-deductible, so pre-tax income and net income both fall $200 — no tax shield.\n\nCash flow: start at −$200, add back $200 non-cash, so cash is unchanged.\n\nBalance sheet: goodwill down $200, retained earnings down $200. Balanced. Point worth making: it's purely an admission that the acquirer overpaid." },
+      { id: "a23", t: "Accounting", d: 3, q: "How does PIK interest flow through the statements?", a: "PIK interest accrues onto the principal instead of being paid in cash. On the income statement it's interest expense, reducing net income. On the cash flow statement it's added back as non-cash. On the balance sheet the debt balance grows by the accrued amount.\n\nSo cash only moves by the tax saving. It preserves near-term liquidity but compounds the debt, which is why it appears in stressed LBOs and mezzanine tranches." },
+      { id: "a24", t: "Accounting", d: 3, q: "How can a profitable company go bankrupt?", a: "Profit isn't liquidity. Common routes: rapid growth consuming working capital faster than earnings arrive; heavy capex ahead of revenue; customers paying slowly while suppliers demand cash; a debt maturity wall with no refinancing available; or a covenant breach triggering acceleration.\n\nMore simply, you service debt with cash, not with net income." },
+      { id: "a25", t: "Accounting", d: 3, q: "Compare deferred revenue and accounts receivable in terms of timing.", a: "They're mirror images. Deferred revenue is cash in before revenue recognised — a liability, and cash arrives early. Accounts receivable is revenue recognised before cash in — an asset, and cash arrives late.\n\nA business with lots of deferred revenue and little receivables has negative working capital and prints cash as it grows. The reverse profile burns cash to grow." },
+      { id: "a26", t: "Accounting", d: 3, q: "What's the effect of capitalising software development costs rather than expensing them?", a: "Capitalising moves the cost off the income statement into an intangible asset, so near-term operating income, EBITDA and net income all look better. The cost reappears later as amortisation.\n\nOn cash flow, the spend shifts from operating to investing, which flatters operating cash flow but not free cash flow. Total cash and taxes are unaffected in book terms. It's a classic quality-of-earnings flag: compare capitalisation policy across comps." },
+      { id: "a27", t: "Accounting", d: 3, q: "What is non-controlling interest and why does it appear in enterprise value?", a: "When a parent consolidates a subsidiary it doesn't wholly own, 100% of the sub's revenue and EBITDA appear in the financials, and the other owners' share of net income is stripped out below the line, with their claim shown in equity as NCI.\n\nBecause the multiple's denominator includes 100% of the sub's EBITDA, the numerator has to reflect 100% of the claims — so you add NCI to enterprise value. It's an apples-to-apples fix." },
+      { id: "a28", t: "Accounting", d: 3, q: "How does a convertible bond affect the statements and the share count?", a: "Before conversion it's debt: coupon interest hits the income statement and it sits as a liability. Under current US GAAP most converts are recorded as a single liability at face rather than split into debt and equity components.\n\nFor diluted EPS you use the if-converted method: add back after-tax interest to net income and add the conversion shares. In valuation, if it's in the money you generally treat it as equity via the extra shares; if out of the money, as debt." },
+      { id: "a29", t: "Accounting", d: 3, q: "A company lowers the expected return assumption on its pension plan. What happens?", a: "Pension expense rises, so operating income and net income fall — with no cash impact in the period, so it's added back or shows as a non-cash item. The funded status worsens, increasing the net pension liability, with much of the remeasurement running through other comprehensive income rather than net income.\n\nIn valuation, an unfunded pension deficit is typically treated as a debt-like item in enterprise value." },
+      { id: "a30", t: "Accounting", d: 3, q: "How do foreign currency movements show up in the financials?", a: "Two channels. Transaction effects — gains and losses on foreign-denominated payables, receivables and debt — hit the income statement, usually in other income.\n\nTranslation effects, from converting a foreign subsidiary's statements into the reporting currency, bypass net income and accumulate in the cumulative translation adjustment within other comprehensive income. That's why equity can move even when earnings don't." },
 
-    // 4. Render to DOM
+      // ENTERPRISE VALUE
+      { id: "e1", t: "Enterprise Value", d: 1, q: "What is enterprise value and why do you add debt and subtract cash?", a: "Enterprise value is the value of the core operating business, available to all capital providers: equity value plus debt, plus preferred and non-controlling interest, minus cash and non-operating assets.\n\nYou add debt because an acquirer inherits it and must repay or refinance it. You subtract cash because it's a non-operating asset that effectively reduces the net price — you're buying back some of your own money." },
+      { id: "e2", t: "Enterprise Value", d: 1, q: "Why do you pair enterprise value with EBITDA and equity value with net income?", a: "Consistency between numerator and denominator. EBITDA is pre-interest, so it belongs to debt and equity holders together and pairs with enterprise value. Net income is post-interest, so it belongs only to equity and pairs with equity value.\n\nMismatching them — EV/net income, or P/EBITDA — makes the multiple meaningless." },
+      { id: "e3", t: "Enterprise Value", d: 1, q: "Which is bigger, equity value or enterprise value?", a: "Either can be bigger. For a levered company with little cash, enterprise value exceeds equity value. For a cash-rich, debt-free company — an early-stage tech business, say — equity value is larger, since you subtract the cash.\n\nIn the extreme, cash above market cap gives negative enterprise value." },
+      { id: "e4", t: "Enterprise Value", d: 2, q: "Can enterprise value be negative? What would that tell you?", a: "Yes, when net cash exceeds market capitalisation. It means the market is assigning the operating business a negative value — usually because it's burning cash and investors expect the pile to be destroyed.\n\nIt can also flag a value opportunity, or a situation where the cash is trapped offshore, subject to tax on repatriation, or otherwise not accessible to shareholders." },
+      { id: "e5", t: "Enterprise Value", d: 2, q: "Why add non-controlling interest and subtract equity method investments in the EV bridge?", a: "It's about matching consolidation. Consolidated EBITDA includes 100% of a partly-owned sub, so you add NCI to capture the whole claim.\n\nEquity method investments in associates aren't consolidated at all — none of their revenue or EBITDA is in your financials, only their share of net income below the line — so you subtract the stake's value to avoid paying for something the denominator never included." },
+      { id: "e6", t: "Enterprise Value", d: 2, q: "How does the treasury stock method work?", a: "For in-the-money options and warrants, assume they're exercised and the company uses the proceeds to buy back shares at the current price.\n\nSo 100 options at a $10 strike with a $25 share price: $1,000 of proceeds buys 40 shares back, giving 60 net new shares. Add those to basic shares. Out-of-the-money options are ignored. RSUs are typically added in full since there's no strike." },
+      { id: "e7", t: "Enterprise Value", d: 2, q: "A company raises $100 of debt. What happens to enterprise value and equity value?", a: "Neither changes, in theory. Debt goes up $100 and cash goes up $100, so net debt is unchanged. Equity value is untouched because you've simply added an asset and a matching liability.\n\nIn reality the market reaction depends on what the cash will be used for and whether the added leverage changes perceived risk or the tax shield." },
+      { id: "e8", t: "Enterprise Value", d: 2, q: "How should operating leases be handled in enterprise value?", a: "Since ASC 842 they're on the balance sheet, so the cleanest approach is to add the operating lease liability to enterprise value and use an EBITDA measure that treats lease costs consistently — either EBITDAR against lease-adjusted EV, or plain EBITDA against EV excluding lease liabilities.\n\nWhat matters is applying the same convention across every comp. Retail and airlines are where this bites hardest." },
+      { id: "e9", t: "Enterprise Value", d: 3, q: "Does paying a cash dividend change enterprise value?", a: "No. Cash falls and equity value falls by the same amount, so enterprise value is unchanged — the operating business hasn't changed.\n\nEquity value falls by roughly the dividend on the ex-date. Same logic as a share buyback: cash down, equity value down, EV flat. It's the clean way to show you understand EV as the value of operations." },
+      { id: "e10", t: "Enterprise Value", d: 3, q: "An acquirer issues stock to buy a target. What happens to its enterprise value?", a: "The acquirer's enterprise value rises by roughly the target's enterprise value, because it now owns those operations. Equity value rises by the value of shares issued, and the acquirer assumes the target's debt and cash.\n\nNo acquirer cash is spent, so the change is driven entirely by the assets and liabilities acquired plus any synergy value the market credits." },
+      { id: "e11", t: "Enterprise Value", d: 3, q: "Is all cash really non-operating?", a: "No — that's a simplification. Most businesses need a minimum operating cash balance for payroll, float and working capital swings. Strictly, only excess cash should be subtracted.\n\nAlso relevant: cash trapped in foreign subsidiaries carries repatriation friction, and regulated entities like banks and insurers must hold capital, which is one reason enterprise value isn't used for financial institutions at all." },
+      { id: "e12", t: "Enterprise Value", d: 3, q: "How would you treat a large unfunded pension deficit and restructuring provisions in EV?", a: "Both are debt-like items. Add the after-tax unfunded pension deficit to enterprise value, since it's a real claim ahead of shareholders that consumes future cash. Add the present value of restructuring or environmental provisions on the same logic.\n\nApply it consistently across comps, and use the after-tax amount where the payments are tax-deductible. Otherwise you'll show a company as cheap purely because you've ignored its liabilities." },
+
+      // VALUATION
+      { id: "v1", t: "Valuation", d: 1, q: "What are the three main valuation methodologies, and which gives the highest value?", a: "Public company comparables, precedent transactions, and discounted cash flow. Often supplemented with LBO analysis to set a floor.\n\nPrecedents usually come in above comps because they include a control premium and synergies. DCF is typically the highest, since it's built on management's own forecasts and is very sensitive to assumptions — but there's no universal rule, and saying so is part of a good answer." },
+      { id: "v2", t: "Valuation", d: 1, q: "When would you use a DCF over comparable companies?", a: "When cash flows are forecastable and the business is genuinely differentiated — few clean comps, an unusual growth or margin trajectory, or a period of investment before returns arrive.\n\nComps rely on the market pricing similar companies sensibly; a DCF doesn't. In practice you present both, and use the DCF to explain why the market's multiple might be wrong." },
+      { id: "v3", t: "Valuation", d: 1, q: "Public comps vs. precedent transactions — what's the difference?", a: "Comps value a company on how the market prices similar public companies today: current, liquid, easy to update, but reflects minority stakes with no control.\n\nPrecedents value it on what acquirers actually paid for similar businesses: includes control premium and synergies, but the data is dated, deal circumstances differ, and disclosure is patchy for private targets." },
+      { id: "v4", t: "Valuation", d: 1, q: "What is a control premium and why does it exist?", a: "The excess an acquirer pays above the unaffected trading price to obtain control — historically often around 20–40%, though it varies widely by sector and cycle.\n\nControl carries real value: you can change management, redirect strategy, adjust capital structure and capture synergies. Buyers also compete, and boards need a premium to recommend a deal to shareholders." },
+      { id: "v5", t: "Valuation", d: 1, q: "Why use multiples at all instead of just intrinsic value?", a: "They're a fast, transparent way to compare companies of different sizes, they reflect what buyers are actually willing to pay today, and they avoid the long chain of assumptions a DCF requires.\n\nThe trade-off is that a multiple compresses growth, risk, margins and capital intensity into a single number, and it inherits any mispricing in the market." },
+      { id: "v6", t: "Valuation", d: 2, q: "Why use EV/EBITDA rather than P/E?", a: "EV/EBITDA is capital-structure neutral, so companies with different leverage are comparable. It also strips out D&A, so depreciation policy and past acquisition accounting don't distort it, and it removes tax rate differences across jurisdictions.\n\nP/E is affected by all three. The cost is that EBITDA ignores capex and working capital, so it flatters capital-intensive businesses." },
+      { id: "v7", t: "Valuation", d: 2, q: "When is P/E meaningless or misleading?", a: "When earnings are negative or near zero, when they're heavily distorted by one-offs, when leverage differs sharply across the peer set, or when tax rates differ materially.\n\nIt's also poor for cyclicals at a peak, where low P/E signals an earnings top rather than cheapness, and for companies where large non-cash charges dominate reported income." },
+      { id: "v8", t: "Valuation", d: 2, q: "How would you value a company with no revenue?", a: "Move up the income statement and out of the financials. Options: a long-dated DCF that models the path to commercialisation, often probability-weighted; EV per operational metric such as users, subscribers, reserves or square footage; comparable early-stage transactions; or a sum of the parts on individual assets.\n\nFor biotech specifically, risk-adjusted NPV by drug candidate, weighted by probability of clinical and regulatory success." },
+      { id: "v9", t: "Valuation", d: 2, q: "How do you select comparable companies?", a: "Start with industry and business model, then screen on size, geography, growth rate, margin profile and capital intensity.\n\nThe tightest sets are usually five to ten names. Be ready to justify exclusions — that's where the interviewer probes. Screening sources: the company's own peer disclosures, analyst reports, SIC/GICS codes, and comps used in relevant merger proxies." },
+      { id: "v10", t: "Valuation", d: 2, q: "What is calendarisation and why does it matter?", a: "Adjusting companies with different fiscal year ends onto a common calendar so multiples are comparable. A June year-end company's FY numbers aren't comparable to a December year-end company's.\n\nRelated: LTM figures — take the last full fiscal year, add the most recent stub period, subtract the prior-year stub. Both fixes exist so you're comparing the same economic period across the set." },
+      { id: "v11", t: "Valuation", d: 2, q: "What is a football field chart?", a: "A summary chart showing the valuation range produced by each methodology as a horizontal bar — comps, precedents, DCF, LBO, 52-week trading range, analyst targets — so a board can see where the ranges overlap.\n\nIt's usually the anchor page of a fairness opinion or pitch, because it reframes valuation as a defensible range rather than a single number." },
+      { id: "v12", t: "Valuation", d: 2, q: "Why do precedent transactions usually produce higher values than comps?", a: "Three reasons: a control premium for the right to direct the business; synergies the buyer expects and partly pays away; and competitive tension in an auction.\n\nOne nuance worth adding: precedents can come in lower if the transactions occurred at a weaker point in the cycle than today's trading market." },
+      { id: "v13", t: "Valuation", d: 2, q: "What is liquidation value and when is it relevant?", a: "The proceeds from selling all assets and repaying liabilities, using distressed rather than book values — receivables at maybe 80–90 cents, inventory much lower, real estate at market, intangibles usually near zero.\n\nRelevant in restructuring and bankruptcy, where it sets the recovery floor creditors compare against a going-concern plan, and occasionally for deep-value asset-heavy businesses." },
+      { id: "v14", t: "Valuation", d: 2, q: "How do you value a bank, and why don't you use enterprise value?", a: "Use equity-based metrics: P/E, P/B and especially P/tangible book value, alongside a dividend discount model or an excess returns model.\n\nEnterprise value doesn't work because debt is raw material for a bank, not financing — deposits and borrowings fund the lending business. Separating operating from financing items is impossible, and interest is core revenue, so EBITDA is meaningless." },
+      { id: "v15", t: "Valuation", d: 3, q: "Two companies in the same sector with identical financials trade at very different multiples. Why?", a: "Forward expectations differ even if trailing figures match: growth outlook, margin trajectory, backlog quality, customer concentration.\n\nOther drivers: quality and durability of earnings, management credibility, governance and dual-class shares, liquidity and index inclusion, cyclical positioning, pending litigation or regulation, and takeover speculation. A trailing multiple is a forward-looking judgment expressed as a backward-looking ratio." },
+      { id: "v16", t: "Valuation", d: 3, q: "When would you use a sum-of-the-parts valuation?", a: "For conglomerates and companies with divisions that would attract very different multiples — an industrial with a high-growth software arm, or a media company with cable, studio and streaming segments.\n\nValue each segment on its own comps, sum the segment enterprise values, subtract unallocated corporate costs capitalised at an appropriate multiple, then bridge to equity value. Often used to argue a conglomerate discount should close via a spin-off." },
+      { id: "v17", t: "Valuation", d: 3, q: "What adjustments do you make when valuing a private company?", a: "Public comps give a starting point, then adjust: a discount for lack of marketability, often cited around 10–30%, since there's no liquid exit; a discount for lack of control on minority stakes.\n\nAlso normalise the financials — remove owner-related expenses, above- or below-market related-party arrangements and one-off items — and use a higher discount rate reflecting size, concentration and thinner disclosure. Data quality is the real constraint." },
+      { id: "v18", t: "Valuation", d: 3, q: "How do you value a highly cyclical company?", a: "Normalise. Use mid-cycle earnings — an average of EBITDA or margins across a full cycle — rather than the current point, and apply a multiple to that normalised figure.\n\nA DCF should model the cycle explicitly rather than assume a smooth path, with a terminal value based on mid-cycle economics. Peak multiples on trough earnings and trough multiples on peak earnings both look wrong, which is exactly why cyclicals confuse screens." },
+      { id: "v19", t: "Valuation", d: 3, q: "When does a DCF break down, and what do you use instead?", a: "It breaks down where cash flows are unforecastable or optionality dominates: early-stage companies, biotech, natural resource projects, distressed situations, and financial institutions.\n\nAlternatives: probability-weighted scenario DCFs, real options valuation for projects with an abandon-or-expand decision, risk-adjusted NPV in pharma, and NAV approaches for resources and property. In distress you'd move to liquidation and recovery analysis instead." },
+      { id: "v20", t: "Valuation", d: 3, q: "How does NAV valuation work for a REIT?", a: "Capitalise the portfolio's forward net operating income at a market cap rate to get gross property value, add development assets and other holdings, subtract net debt and any preferred, then divide by shares to get NAV per share. Compare the trading price to NAV to see the premium or discount.\n\nAlongside NAV you'd use P/FFO or P/AFFO rather than P/E, because depreciation badly distorts REIT earnings." },
+
+      // DCF
+      { id: "d1", t: "DCF", d: 1, q: "Walk me through a DCF.", a: "Project unlevered free cash flow for five to ten years. Discount each year to today at WACC. Calculate a terminal value at the end of the horizon, using either perpetuity growth or an exit multiple, and discount it back too.\n\nSum the discounted cash flows and terminal value to get enterprise value. Then bridge: subtract net debt, preferred and NCI to get equity value, and divide by diluted shares for value per share. Finish by mentioning sensitivity tables on WACC and terminal assumptions." },
+      { id: "d2", t: "DCF", d: 1, q: "What is WACC and how do you calculate it?", a: "The blended required return of all capital providers, and the discount rate for unlevered cash flows.\n\nWACC = (E/V × cost of equity) + (D/V × cost of debt × (1 − tax rate)). Cost of equity comes from CAPM: risk-free rate plus levered beta times the equity risk premium, sometimes with a size or country premium. Weights should be market values at a target capital structure, not book values." },
+      { id: "d3", t: "DCF", d: 1, q: "Why do you use unlevered free cash flow in a DCF?", a: "Unlevered FCF is the cash available to all capital providers before financing, so discounting it at WACC gives enterprise value directly. That makes the output independent of capital structure and comparable across companies.\n\nThe financing effects aren't ignored — they're captured in WACC through the weights and the tax-effected cost of debt." },
+      { id: "d4", t: "DCF", d: 1, q: "What are the two ways to calculate terminal value?", a: "Perpetuity growth, or Gordon growth: final year FCF × (1 + g) / (WACC − g), with g typically at or below long-run GDP or inflation, often 1–3%.\n\nExit multiple: apply a terminal-year EBITDA multiple, usually anchored on current trading comps. It's more common in banking because it's market-grounded. Best practice is to cross-check each against the other — an exit multiple implies a growth rate, and vice versa." },
+      { id: "d5", t: "DCF", d: 2, q: "Give me the formula for unlevered free cash flow.", a: "EBIT × (1 − tax rate), plus D&A, minus capex, minus the increase in working capital.\n\nEBIT × (1 − t) is often called NOPAT. Note interest is excluded entirely, and the tax is a notional unlevered tax, not the cash tax from the filings — otherwise you'd be double-counting the interest tax shield already sitting in WACC. Add back other non-cash charges as relevant." },
+      { id: "d6", t: "DCF", d: 2, q: "How does a levered DCF differ from an unlevered one?", a: "You project levered free cash flow — cash flow after interest and mandatory debt repayments, so cash to equity holders only — and discount it at the cost of equity rather than WACC.\n\nThat produces equity value directly, with no net debt bridge. It's harder to do well because you must model the full debt schedule, and results swing with capital structure. In theory both approaches give the same answer." },
+      { id: "d7", t: "DCF", d: 2, q: "What is CAPM, and why do you unlever and relever beta?", a: "Cost of equity = risk-free rate + levered beta × equity risk premium, sometimes plus a size premium.\n\nObserved betas of comps reflect their own leverage, so you strip that out — unlevered beta = levered beta / (1 + (1 − t) × D/E) — take the median across comps, then relever at your company's target capital structure. Otherwise you'd be importing peers' financing risk into your company's discount rate." },
+      { id: "d8", t: "DCF", d: 2, q: "Which has a bigger effect on a DCF: a 10% change in revenue or a 1% change in the discount rate?", a: "Usually the discount rate, because it compounds across every projected year and drives the terminal value, which is often 60–80% of total value. A percentage point on WACC can move value by well over 10%.\n\nRevenue changes matter less than they look, since costs partly scale with them — the real question is the flow-through to margin. Worth saying you'd check the actual sensitivity table rather than assert it." },
+      { id: "d9", t: "DCF", d: 2, q: "What is the mid-year convention and when do you use it?", a: "Instead of discounting each year's cash flow as if it arrives on the last day, you discount it as if it arrives mid-year — using exponents of 0.5, 1.5, 2.5 and so on.\n\nIt's more realistic since cash flows arrive throughout the year, and it raises the valuation modestly, typically a few percent. Apply it consistently to terminal value too, or you'll create an internal inconsistency." },
+      { id: "d10", t: "DCF", d: 2, q: "Why must the terminal growth rate be low?", a: "Because a perpetual growth rate above long-run GDP implies the company eventually becomes larger than the entire economy, which is impossible. So it's capped around long-run inflation or GDP growth — typically 1–3% in developed markets.\n\nMechanically, as g approaches WACC the denominator collapses and terminal value explodes toward infinity, which is a sign the assumption is broken." },
+      { id: "d11", t: "DCF", d: 2, q: "Your terminal value is 90% of total enterprise value. Is that a problem?", a: "It's a warning sign that the DCF is really a disguised multiple, and the answer is being driven almost entirely by assumptions about a year you can't forecast.\n\nUsual causes: too short a projection horizon, cash flows that are negative or depressed early, or too high a growth rate. Fixes: extend the horizon until the business reaches a steady state, cross-check the implied exit multiple against comps, and widen the sensitivity tables. A 60–80% share is normal; 90% needs explaining." },
+      { id: "d12", t: "DCF", d: 3, q: "How do you determine the cost of debt, and why is it tax-effected?", a: "Use the yield to maturity on the company's traded bonds — a market rate, not the coupon or the historical average rate from the filings. With no traded debt, use recent issuance, or a credit rating and the corresponding spread over the risk-free rate.\n\nIt's tax-effected because interest is tax-deductible, so the true economic cost is the rate times one minus the tax rate. That deduction is the interest tax shield." },
+      { id: "d13", t: "DCF", d: 3, q: "How would you set a discount rate for a private company?", a: "There's no observable beta, so build it up: take unlevered betas from public comps, relever at the private company's target capital structure, and apply CAPM.\n\nThen add premia for size and for illiquidity, and if relevant a country risk premium. Cost of debt comes from the company's actual borrowing rate or a synthetic rating based on interest coverage. Be explicit that this is a judgment-heavy input and run wide sensitivities." },
+      { id: "d14", t: "DCF", d: 3, q: "Your exit multiple implies a 6% terminal growth rate. What do you do?", a: "Treat it as a failed cross-check. A 6% perpetual growth rate is implausible, so either the exit multiple is too high or the terminal-year cash flow is understated relative to the multiple's basis.\n\nBack out the implied growth: g = (WACC × TV − FCF) / (TV + FCF). Then either lower the exit multiple toward the comp set, extend the projection so the terminal year reflects a mature business, or revisit the WACC. Present the reconciliation rather than hiding it." },
+      { id: "d15", t: "DCF", d: 3, q: "A company has negative free cash flow for the first five projected years. How does that affect your DCF?", a: "It concentrates value in the terminal period, which makes the valuation fragile and terminal assumptions decisive.\n\nPractical responses: extend the horizon to ten or fifteen years so the business reaches steady state within the explicit forecast; model the funding required, since the negative years imply capital raises and therefore dilution; and consider scenario weighting. Also check whether NOLs build up, which lowers cash taxes in the profitable years." },
+      { id: "d16", t: "DCF", d: 3, q: "There's a circularity between WACC and capital structure. How do you handle it?", a: "WACC depends on the debt-to-equity weights, but equity value is what the DCF is trying to produce. Standard fix: use a target or industry-average capital structure at market values rather than the current one, which also makes the result comparable across peers.\n\nWhere leverage changes materially over time — an LBO, for instance — use adjusted present value instead: value the unlevered business at the unlevered cost of equity, then add the present value of the tax shields separately." },
+      { id: "d17", t: "DCF", d: 3, q: "Should you use the book or market value of debt in WACC?", a: "Market value in principle, because WACC is about the return investors currently require, and that's reflected in traded prices and yields.\n\nIn practice, book value is a reasonable proxy for investment-grade debt trading near par. It's a poor proxy for distressed debt trading at a deep discount, or for long-dated fixed-rate debt after a large move in rates — there, using book value materially misstates both the weights and the cost." },
+
+      // M&A
+      { id: "m1", t: "M&A", d: 1, q: "Why would one company acquire another?", a: "Cost synergies from removing duplicate overhead and scale in procurement; revenue synergies from cross-selling or distribution; acquiring technology, IP or talent faster than building it; entering a new geography or customer segment; consolidating a fragmented market to gain pricing power; and financial motives such as deploying excess cash, using NOLs or increasing leverage capacity.\n\nLess admirable but real: empire-building and defensive scale." },
+      { id: "m2", t: "M&A", d: 1, q: "What does accretive or dilutive mean?", a: "It compares the acquirer's pro forma EPS after the deal with its standalone EPS. Higher is accretive, lower is dilutive.\n\nPro forma EPS = combined net income, including after-tax synergies, less after-tax interest on new debt, less foregone interest on cash used, plus or minus incremental D&A from asset write-ups, divided by the new share count including any shares issued." },
+      { id: "m3", t: "M&A", d: 1, q: "Which is the cheapest form of acquisition financing — cash, debt or stock?", a: "Cash is usually cheapest, because the cost is the foregone interest on that cash, currently low relative to other capital. Debt is next: interest is tax-deductible, and the after-tax cost is typically below the earnings yield being acquired.\n\nStock is generally the most expensive, since the acquirer's earnings yield — the inverse of its P/E — is usually lower than either. Cheapest isn't always best: debt capacity, ratings and risk-sharing matter." },
+      { id: "m4", t: "M&A", d: 1, q: "Strategic buyer vs. financial buyer — how do they differ?", a: "A strategic buyer is an operating company in or near the same industry. It can realise synergies, generally has a lower cost of capital, holds assets indefinitely, and so can usually pay more.\n\nA financial buyer — a PE fund — is underwriting to a return over a three-to-seven-year hold, relies on leverage and operational improvement, and is disciplined by the price at which the returns still work." },
+      { id: "m5", t: "M&A", d: 2, q: "What's the quick rule of thumb for whether an all-stock deal is accretive?", a: "Compare the two P/Es. If the acquirer's P/E is higher than the target's — including the premium paid — the deal is accretive. If lower, dilutive.\n\nFor cash or debt, compare the target's after-tax earnings yield with the after-tax cost of the funding. If the yield on what you're buying exceeds the cost of what you're paying with, it's accretive. Caveat: accretion is not the same as value creation." },
+      { id: "m6", t: "M&A", d: 2, q: "Walk me through building a merger model.", a: "Project both companies standalone. Set the purchase price and premium, then decide the mix of cash, debt and stock. Build sources and uses.\n\nRun purchase price allocation: write up assets to fair value, create new intangibles and a deferred tax liability, and plug goodwill. Combine the income statements, layer in synergies, new interest expense, foregone interest on cash, and incremental D&A. Compute the new share count and pro forma EPS, compare to standalone, and sensitise accretion against price and synergies." },
+      { id: "m7", t: "M&A", d: 2, q: "What kinds of synergies are there, and which do buyers actually get credit for?", a: "Cost synergies — headcount, facilities, procurement, duplicated public company costs — are more credible because they're within the buyer's control and quantifiable.\n\nRevenue synergies — cross-selling, wider distribution, pricing — are slower, less certain, and the market discounts them heavily. There are also financial synergies from tax attributes and cheaper funding. Analysts typically haircut announced synergies and pay close attention to the cost to achieve them." },
+      { id: "m8", t: "M&A", d: 2, q: "How is goodwill calculated in a deal?", a: "Equity purchase price, minus the target's book value of equity, plus any existing goodwill written off, plus the deferred tax liability created, minus the write-up of tangible and identifiable intangible assets.\n\nMore intuitively: what you paid above the fair value of identifiable net assets acquired. The write-up step matters because it converts goodwill into depreciable and amortisable assets." },
+      { id: "m9", t: "M&A", d: 2, q: "What is purchase price allocation and how does it hit EPS?", a: "The acquirer restates the target's assets to fair value, recognises identifiable intangibles like customer relationships, brands and technology, and allocates the remainder to goodwill.\n\nWritten-up tangible assets and new intangibles get depreciated and amortised, creating incremental non-cash D&A that reduces pro forma net income and makes deals look more dilutive. Goodwill itself isn't amortised. This is why bankers often show EPS both with and without intangible amortisation." },
+      { id: "m10", t: "M&A", d: 2, q: "Why is a 100% stock deal at a large premium usually dilutive?", a: "The acquirer issues shares valued at its own P/E to buy earnings priced at the target's P/E plus a premium. If the effective P/E paid exceeds the acquirer's own, each new share brings in less earnings than the existing shares, so EPS falls.\n\nThe deal can still create value if synergies close the gap — which is why the synergy number needed to reach breakeven is a standard output of the model." },
+      { id: "m11", t: "M&A", d: 3, q: "An acquirer with a 20x P/E buys a target at 15x in an all-stock deal. Show why it's accretive.", a: "Say the target has $100 of net income, so the price is $1,500. The acquirer issues $1,500 of stock; at a 20x P/E its earnings yield is 5%, so those shares would otherwise have carried $75 of earnings.\n\nThe acquirer picks up $100 of earnings while giving up shares representing $75 — accretion of $25 before financing effects. Put simply, buying earnings at a 6.7% yield with paper issued at a 5% yield adds EPS." },
+      { id: "m12", t: "M&A", d: 3, q: "What is a contribution analysis and what does it show?", a: "It compares each party's contribution to the combined entity — revenue, EBITDA, net income, sometimes cash flow — against the ownership split each would receive under the proposed exchange ratio.\n\nIt's a fairness check used heavily in mergers of equals and stock deals: if a target contributes 40% of combined EBITDA but receives only 30% of the equity, that gap has to be justified by growth, quality or synergy contribution." },
+      { id: "m13", t: "M&A", d: 3, q: "Why does an asset write-up create a deferred tax liability?", a: "In a stock purchase the tax basis of the assets generally carries over, so the write-up boosts book depreciation and amortisation but isn't deductible for tax.\n\nBook expense exceeds tax expense, so book income is lower than taxable income now and higher later — a future tax obligation, recorded as a DTL at the deal's tax rate. That's why the DTL is added when computing goodwill. In an asset purchase with a stepped-up tax basis, no DTL arises and the D&A is deductible." },
+      { id: "m14", t: "M&A", d: 3, q: "Stock sale vs. asset sale — what's the tax difference, and what is a 338(h)(10) election?", a: "In a stock sale the buyer acquires the entity with historic tax basis, inherits all liabilities, and gets no step-up. Sellers usually prefer it: single layer of tax, capital gains treatment.\n\nIn an asset sale the buyer steps up the tax basis and deducts the higher D&A, and can leave liabilities behind — but a C-corp seller may face double taxation. A 338(h)(10) election lets a transaction that is legally a stock sale be treated as an asset sale for tax, giving the buyer the step-up; the seller typically demands compensation for the extra tax." },
+      { id: "m15", t: "M&A", d: 3, q: "Fixed vs. floating exchange ratio — who bears the risk, and what is a collar?", a: "A fixed exchange ratio sets the number of acquirer shares per target share, so the target's shareholders bear the risk of the acquirer's price moving between signing and closing. A floating ratio fixes the value per target share, so the acquirer bears the dilution risk.\n\nA collar caps the exposure: the ratio floats within a price band and fixes outside it, or vice versa. Deals also include break-up fees, typically 1–4% of equity value, to compensate a jilted party." },
+      { id: "m16", t: "M&A", d: 3, q: "A deal is accretive but destroys value. How?", a: "Accretion is an EPS arithmetic result, not an economics test. A high-P/E acquirer can buy almost any low-P/E business and show accretion, even if it's paying above intrinsic value or acquiring a structurally declining business.\n\nOther routes: funding with cheap debt that raises financial risk and lowers the multiple; synergies that never materialise; a premium exceeding the value of control; and integration failures. Value is created only when the price paid is below the target's standalone value plus realised synergies." },
+
+      // LBO
+      { id: "l1", t: "LBO", d: 1, q: "What is an LBO and why does leverage boost returns?", a: "A financial sponsor buys a company using mostly debt and a smaller equity cheque, using the target's own cash flow to service that debt, and exits in roughly three to seven years.\n\nLeverage boosts equity returns two ways: the equity cheque is small relative to enterprise value, so any increase in enterprise value is amplified; and cash flow used to repay debt converts to equity value over the hold. Interest deductibility adds a tax shield. The same leverage magnifies losses on the downside." },
+      { id: "l2", t: "LBO", d: 1, q: "What makes an ideal LBO candidate?", a: "Stable, predictable cash flow to service debt. Low capex and working capital needs. A defensible market position with high barriers to entry, sticky customers and non-cyclical demand.\n\nAlso: a strong management team, low existing leverage, assets that support borrowing, identifiable cost savings or underinvestment to fix, a clear exit route, and a purchase price low enough that the returns work without heroic assumptions." },
+      { id: "l3", t: "LBO", d: 1, q: "What are the main exit routes for a sponsor?", a: "A sale to a strategic buyer, usually the highest price because of synergies. A secondary buyout to another sponsor. An IPO, which gives partial exit and monetises over time through follow-ons.\n\nA dividend recapitalisation isn't a full exit but returns capital early and de-risks the deal. Exit assumptions are the single most sensitive input in an LBO model." },
+      { id: "l4", t: "LBO", d: 2, q: "Walk me through an LBO model.", a: "Set entry: purchase price from an entry multiple on EBITDA, then sources and uses, including refinanced debt, fees and the sponsor's equity as the plug.\n\nProject the operating model, build a debt schedule with interest, mandatory amortisation and a cash sweep, and track the balances each year. Set exit: apply an exit multiple to exit-year EBITDA to get enterprise value, subtract remaining net debt for equity proceeds.\n\nCompute IRR and MOIC on the sponsor's equity, then sensitise on entry multiple, exit multiple and leverage." },
+      { id: "l5", t: "LBO", d: 2, q: "What's the difference between IRR and MOIC, and what IRR does doubling your money in five years imply?", a: "MOIC is exit proceeds divided by equity invested — a raw multiple that ignores timing. IRR is the annualised return, so it's sensitive to how long the money is out.\n\nRules of thumb: 2x in 3 years is roughly 26% IRR, 2x in 5 years about 15%, 3x in 5 years about 25%, 2.5x in 4 years around 26%. Sponsors quote both because a fast 2x can beat a slow 3x on IRR while returning less cash." },
+      { id: "l6", t: "LBO", d: 2, q: "What goes into sources and uses?", a: "Uses: equity purchase price, refinancing of existing debt, transaction fees to advisers, and financing fees, which are capitalised and amortised.\n\nSources: each debt tranche, any excess cash on the target's balance sheet, management rollover equity, and sponsor equity as the balancing figure. Sources must equal uses; sponsor equity is the plug, and its size drives the returns." },
+      { id: "l7", t: "LBO", d: 2, q: "Rank the main debt tranches by cost and seniority.", a: "Revolver: cheapest, secured, undrawn at close, funds working capital, carries a commitment fee.\n\nTerm Loan A: amortising, bank-held, shorter tenor. Term Loan B: institutional, minimal amortisation of around 1% a year, floating rate. Senior unsecured notes: fixed coupon, bullet maturity, higher cost. Subordinated or mezzanine, often with PIK and warrants: most expensive, most junior.\n\nCost rises as you move down because recovery in default falls." },
+      { id: "l8", t: "LBO", d: 2, q: "What happens to IRR if you increase leverage, all else equal?", a: "IRR generally rises, because the equity cheque shrinks while the same enterprise value gain accrues to a smaller base, and there's a larger interest tax shield.\n\nBut only up to a point: higher leverage brings higher interest rates, more restrictive covenants, less cash flow for growth, and a real risk of default. Lenders cap it, and past a certain leverage level the added interest cost consumes the deleveraging benefit." },
+      { id: "l9", t: "LBO", d: 2, q: "What is a dividend recapitalisation?", a: "The portfolio company raises new debt and pays the proceeds to the sponsor as a dividend, without any sale.\n\nIt pulls cash forward, which sharply improves IRR because of the timing, and returns capital to LPs early. The company ends up more levered with no operational improvement to show for it, so it's controversial and depends on receptive credit markets and covenant headroom." },
+      { id: "l10", t: "LBO", d: 3, q: "Paper LBO: $100m EBITDA, 10x entry, 5x debt, EBITDA grows to $130m, exit at 10x in year five, $150m of cumulative debt paydown. What's the MOIC and roughly the IRR?", a: "Entry EV is $1,000m; debt $500m, so sponsor equity is $500m.\n\nExit EV = $130m × 10 = $1,300m. Debt at exit = $500m − $150m = $350m. Equity proceeds = $1,300m − $350m = $950m.\n\nMOIC = 950 / 500 = 1.9x over five years, so an IRR around 14%. Attribution: EBITDA growth contributed $300m and deleveraging $150m, with no multiple expansion." },
+      { id: "l11", t: "LBO", d: 3, q: "How do you attribute LBO returns to their drivers?", a: "Three buckets. EBITDA growth: the change in EBITDA times the entry multiple. Multiple expansion: the change in multiple times exit EBITDA. Debt paydown: cumulative deleveraging, plus any cash built on the balance sheet.\n\nIt matters because LPs discount returns driven by multiple expansion, which is market luck, and reward operational improvement, which is repeatable skill. Underwriting to flat or lower exit multiples is standard discipline." },
+      { id: "l12", t: "LBO", d: 3, q: "Maintenance vs. incurrence covenants — what's the difference?", a: "Maintenance covenants are tested every quarter regardless of activity — leverage below a level, interest coverage above one — and are typical of bank debt and Term Loan A. A breach can trigger default and give lenders control.\n\nIncurrence covenants are tested only when the company takes an action, like raising debt or paying a dividend, and are typical of high-yield bonds and cov-lite Term Loan Bs. Sponsors prefer incurrence-only because there's far less risk of losing the company on a bad quarter." },
+      { id: "l13", t: "LBO", d: 3, q: "Why do sponsors want management to roll over equity?", a: "Alignment. Managers who put a meaningful part of their own proceeds back into the new entity share the downside, not just the upside, which sharpens focus on cash generation and deleveraging.\n\nIt also reduces the sponsor's equity cheque, boosting IRR, and signals that the people who know the business best believe the plan. It's usually paired with a management incentive plan of around 8–12% of equity, vesting on time and on return hurdles." },
+      { id: "l14", t: "LBO", d: 3, q: "You hold the investment one extra year at the same exit multiple. What happens to IRR and MOIC?", a: "MOIC rises modestly — another year of deleveraging and EBITDA growth adds equity value. IRR usually falls, because the same multiple is now spread over a longer period.\n\nExample: 2.0x in four years is about 19% IRR; 2.2x in five years is about 17%. The extra year only helps IRR if the incremental annual equity growth exceeds the IRR already achieved. It's why sponsors exit early when value creation slows." },
+      { id: "l15", t: "LBO", d: 3, q: "How do you back into the maximum price a sponsor can pay?", a: "Fix the required return, typically a 20–25% IRR over five years, and work backwards. Project exit-year EBITDA, apply a conservative exit multiple — usually at or below entry — and subtract projected remaining net debt to get exit equity value.\n\nDiscount that back at the target IRR to get the maximum affordable equity cheque, add available debt capacity based on lender leverage limits, and subtract fees. That gives the maximum enterprise value, and dividing by current EBITDA gives the maximum entry multiple. This is exactly how an LBO sets a valuation floor." },
+
+      // MARKETS & FIT
+      { id: "f1", t: "Markets & Fit", d: 1, q: "Why investment banking?", a: "Structure it in three parts and make it specific to you. First, what drew you in — a concrete experience, a class, a project, a conversation, not an abstraction. Second, why the work suits you: the pace, the analytical rigour, the exposure to how companies make decisions at the highest level. Third, why this bank in particular — a group, a deal, a person you spoke to.\n\nAvoid: money, prestige, and 'I want to learn a lot'. Everyone says those." },
+      { id: "f2", t: "Markets & Fit", d: 1, q: "Walk me through your resume.", a: "Two minutes maximum, chronological, and built as a narrative rather than a list. For each step: what you did, one concrete achievement with a number, and why it led to the next step.\n\nEnd on why that path leads to this role now. The interviewer is testing whether you can structure a story under pressure and whether your interest looks deliberate rather than accidental." },
+      { id: "f3", t: "Markets & Fit", d: 1, q: "Tell me about a recent deal you've been following.", a: "Have two ready, ideally one in the group's sector. Cover: who bought whom, the price and premium, the financing mix, and the strategic rationale.\n\nThen add your own view — whether the price looked full, whether the synergies are credible, what antitrust or financing risk exists. The differentiator is having an opinion you can defend, not reciting the press release." },
+      { id: "f4", t: "Markets & Fit", d: 1, q: "Where are the major indices and the 10-year yield right now?", a: "Know the current levels for the S&P 500, Nasdaq and your local index, the 10-year Treasury yield, the policy rate, oil and gold — and roughly where each has moved over the past year.\n\nThe numbers matter less than showing you follow markets daily. Have a one-line view on what's driving them: rate expectations, inflation prints, earnings revisions." },
+      { id: "f5", t: "Markets & Fit", d: 2, q: "Pitch me a stock.", a: "Structure: the company in one line; your recommendation and time horizon; two or three specific catalysts; the valuation case with an actual multiple or price target versus current; and the key risk plus why the market is wrong.\n\nThe common failure is pitching a well-known company with a consensus view. Pick something you can genuinely defend under follow-up questions on numbers." },
+      { id: "f6", t: "Markets & Fit", d: 2, q: "You have $10 million to invest. What do you do?", a: "There's no correct portfolio; they're testing reasoning. Start with the framework — objective, time horizon, risk tolerance, liquidity needs and tax treatment — then propose an allocation and justify each sleeve.\n\nBe specific about at least one active position and why. Acknowledge what would make you change your mind. A thoughtful, defensible allocation beats a clever one." },
+      { id: "f7", t: "Markets & Fit", d: 2, q: "What happens to markets if the central bank raises rates 100bps unexpectedly?", a: "Bonds sell off and yields rise, with long duration hit hardest. Equities generally fall, and long-duration growth stocks fall more than value because more of their value sits in distant cash flows.\n\nBanks may benefit from wider net interest margins. The currency typically strengthens on rate differentials. Gold usually weakens as real yields rise. In deal terms: financing costs rise, LBO leverage capacity falls, and M&A volumes typically slow." },
+      { id: "f8", t: "Markets & Fit", d: 3, q: "Tell me about a time you failed.", a: "Use a real failure with real consequences — a hedged non-failure reads as evasion. Structure it: the situation, your specific decision or error, the consequence, what you did to contain it, and the concrete change in how you work since.\n\nSpend most of the answer on the last part. They're testing self-awareness and whether you learn, not whether you're flawless." },
+      { id: "f9", t: "Markets & Fit", d: 3, q: "Why should we hire you over the other candidates with the same GPA and internships?", a: "Pick two genuine differentiators and evidence each. Something in your background that's rare in the pool, a demonstrated skill that maps directly to the analyst job, or a specific reason your interest in this group is deeper than most.\n\nClose by connecting it to what the team actually needs. Avoid generic traits like hard-working and detail-oriented — everyone claims them, and they carry no information." },
+      { id: "f10", t: "Markets & Fit", d: 3, q: "Do you have any questions for me?", a: "Always yes, and make them specific to the person. Ask about a deal their group ran and what made it difficult. Ask how the group staffs analysts and how work gets allocated. Ask what distinguishes the analysts who do well from those who struggle.\n\nDon't ask anything answerable from the website, and don't ask about hours or compensation in a first round." },
+    ];
+
+    const TOPICS = ["Accounting", "Enterprise Value", "Valuation", "DCF", "M&A", "LBO", "Markets & Fit"];
+    const LEVELS = [
+      { d: 1, label: "Warm-up" },
+      { d: 2, label: "Standard" },
+      { d: 3, label: "Stretch" },
+    ];
+    const STORE_KEY = "ib-drill-record-v1";
+
+    const C = {
+      ink: "#0A121C",
+      panel: "#101B29",
+      panel2: "#152232",
+      line: "#22344B",
+      text: "#E9EFF6",
+      muted: "#7A91AB",
+      gold: "#E2A93E",
+      green: "#43BE8E",
+      red: "#DE5F5F",
+    };
+
+    const mono = "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace";
+    const serif = "'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif";
+    const sans = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function Pip({ level }) {
+      return (
+        <span style={{ fontFamily: mono, letterSpacing: "1px", color: C.gold, fontSize: 11 }}>
+          {"▰".repeat(level)}
+          <span style={{ color: C.line }}>{"▰".repeat(3 - level)}</span>
+        </span>
+      );
+    }
+
+    function Chip({ active, onClick, children, tone }) {
+      return (
+        <button
+          onClick={onClick}
+          style={{
+            fontFamily: mono,
+            fontSize: 12,
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
+            padding: "9px 13px",
+            borderRadius: 3,
+            border: `1px solid ${active ? tone || C.gold : C.line}`,
+            background: active ? (tone || C.gold) + "1F" : "transparent",
+            color: active ? tone || C.gold : C.muted,
+            cursor: "pointer",
+            transition: "all .15s ease",
+          }}
+        >
+          {children}
+        </button>
+      );
+    }
+
+    function App() {
+      const [stage, setStage] = useState("setup");
+      const [topics, setTopics] = useState(TOPICS);
+      const [levels, setLevels] = useState([1, 2, 3]);
+      const [count, setCount] = useState(15);
+      const [queue, setQueue] = useState([]);
+      const [idx, setIdx] = useState(0);
+      const [shown, setShown] = useState(false);
+      const [results, setResults] = useState([]);
+      const [record, setRecord] = useState({});
+      const [expanded, setExpanded] = useState(null);
+
+      useEffect(() => {
+        (async () => {
+          try {
+            const r = await window.storage.get(STORE_KEY);
+            if (r && r.value) setRecord(JSON.parse(r.value));
+          } catch (e) {}
+        })();
+      }, []);
+
+      const saveRecord = useCallback(async (next) => {
+        setRecord(next);
+        try {
+          await window.storage.set(STORE_KEY, JSON.stringify(next));
+        } catch (e) {}
+      }, []);
+
+      const pool = useMemo(
+        () => BANK.filter((x) => topics.includes(x.t) && levels.includes(x.d)),
+        [topics, levels]
+      );
+
+      const start = (custom) => {
+        const src = custom || shuffle(pool).slice(0, count === 0 ? pool.length : count);
+        if (!src.length) return;
+        setQueue(src);
+        setIdx(0);
+        setShown(false);
+        setResults([]);
+        setStage("drill");
+      };
+
+      const grade = (ok) => {
+        const q = queue[idx];
+        const next = { ...record };
+        const prev = next[q.id] || { seen: 0, right: 0 };
+        next[q.id] = { seen: prev.seen + 1, right: prev.right + (ok ? 1 : 0) };
+        saveRecord(next);
+        const r = [...results, { ...q, ok }];
+        setResults(r);
+        if (idx + 1 >= queue.length) setStage("summary");
+        else {
+          setIdx(idx + 1);
+          setShown(false);
+        }
+      };
+
+      useEffect(() => {
+        if (stage !== "drill") return;
+        const h = (e) => {
+          if (e.code === "Space") { e.preventDefault(); setShown(true); }
+          if (shown && e.key === "1") grade(true);
+          if (shown && e.key === "2") grade(false);
+        };
+        window.addEventListener("keydown", h);
+        return () => window.removeEventListener("keydown", h);
+      });
+
+      const toggle = (list, setList, v) =>
+        setList(list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
+
+      const shell = {
+        minHeight: "100vh",
+        background: C.ink,
+        color: C.text,
+        fontFamily: sans,
+        padding: "20px 16px 48px",
+      };
+      const label = {
+        fontFamily: mono,
+        fontSize: 11,
+        letterSpacing: "0.16em",
+        textTransform: "uppercase",
+        color: C.muted,
+        marginBottom: 10,
+      };
+
+      if (stage === "setup") {
+        return (
+          <div style={shell}>
+            <div style={{ maxWidth: 720, margin: "0 auto" }}>
+              <div style={{ borderBottom: `1px solid ${C.line}`, paddingBottom: 18, marginBottom: 26 }}>
+                <div style={{ ...label, marginBottom: 6 }}>Technical drill · {BANK.length} questions</div>
+                <h1 style={{ fontFamily: serif, fontSize: 34, lineHeight: 1.1, margin: 0, fontWeight: 400 }}>
+                  The Analyst<br />
+                  <span style={{ color: C.gold }}>Question Book</span>
+                </h1>
+              </div>
+
+              <div style={{ marginBottom: 26 }}>
+                <div style={label}>Coverage</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {TOPICS.map((t) => (
+                    <Chip key={t} active={topics.includes(t)} onClick={() => toggle(topics, setTopics, t)}>
+                      {t}
+                    </Chip>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ marginBottom: 26 }}>
+                <div style={label}>Difficulty</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {LEVELS.map((l) => (
+                    <Chip key={l.d} active={levels.includes(l.d)} onClick={() => toggle(levels, setLevels, l.d)}>
+                      {l.label} {"▰".repeat(l.d)}
+                    </Chip>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ marginBottom: 30 }}>
+                <div style={label}>Session length</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {[10, 15, 25, 0].map((n) => (
+                    <Chip key={n} active={count === n} onClick={() => setCount(n)}>
+                      {n === 0 ? `All ${pool.length}` : n}
+                    </Chip>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                onClick={() => start()}
+                disabled={!pool.length}
+                style={{
+                  width: "100%",
+                  padding: "16px",
+                  background: pool.length ? C.gold : C.panel,
+                  color: pool.length ? C.ink : C.muted,
+                  border: "none",
+                  borderRadius: 3,
+                  fontFamily: mono,
+                  fontSize: 13,
+                  letterSpacing: "0.14em",
+                  textTransform: "uppercase",
+                  fontWeight: 700,
+                  cursor: pool.length ? "pointer" : "default",
+                }}
+              >
+                {pool.length ? "Start drill" : "Select a topic to begin"}
+              </button>
+
+              <p style={{ color: C.muted, fontSize: 13, lineHeight: 1.6, marginTop: 22 }}>
+                Answer out loud first, then reveal and mark yourself honestly. Your record carries across sessions.
+              </p>
+              {Object.keys(record).length > 0 && (
+                <div style={{ marginTop: 18, display: "flex", gap: 10, alignItems: "center" }}>
+                  <span style={{ fontFamily: mono, fontSize: 12, color: C.muted }}>
+                    {Object.keys(record).length} of {BANK.length} attempted
+                  </span>
+                  <button
+                    onClick={() => saveRecord({})}
+                    style={{ fontFamily: mono, fontSize: 12, color: C.red, background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                  >
+                    Reset record
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      }
+
+      if (stage === "drill") {
+        const q = queue[idx];
+        const stat = record[q.id];
+        return (
+          <div style={shell}>
+            <div style={{ maxWidth: 720, margin: "0 auto" }}>
+              <div style={{ display: "flex", gap: 2, height: 5, marginBottom: 14 }}>
+                {queue.map((_, i) => {
+                  const r = results[i];
+                  return (
+                    <div
+                      key={i}
+                      style={{
+                        flex: 1,
+                        background: r ? (r.ok ? C.green : C.red) : i === idx ? C.gold : C.line,
+                        borderRadius: 1,
+                      }}
+                    />
+                  );
+                })}
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 22 }}>
+                <span style={{ fontFamily: mono, fontSize: 12, color: C.muted, letterSpacing: "0.1em" }}>
+                  {String(idx + 1).padStart(2, "0")} / {String(queue.length).padStart(2, "0")} · {q.t}
+                </span>
+                <Pip level={q.d} />
+              </div>
+
+              <div
+                key={q.id}
+                style={{
+                  background: C.panel,
+                  border: `1px solid ${C.line}`,
+                  borderLeft: `2px solid ${C.gold}`,
+                  borderRadius: 3,
+                  padding: "24px 20px",
+                }}
+              >
+                <p style={{ fontFamily: serif, fontSize: 22, lineHeight: 1.4, margin: 0 }}>{q.q}</p>
+                {stat && (
+                  <div style={{ fontFamily: mono, fontSize: 11, color: C.muted, marginTop: 14 }}>
+                    Seen {stat.seen}× · got it {stat.right}×
+                  </div>
+                )}
+              </div>
+
+              {!shown ? (
+                <button
+                  onClick={() => setShown(true)}
+                  style={{
+                    width: "100%",
+                    marginTop: 16,
+                    padding: "16px",
+                    background: "transparent",
+                    border: `1px solid ${C.gold}`,
+                    color: C.gold,
+                    borderRadius: 3,
+                    fontFamily: mono,
+                    fontSize: 13,
+                    letterSpacing: "0.14em",
+                    textTransform: "uppercase",
+                    cursor: "pointer",
+                  }}
+                >
+                  Show answer
+                </button>
+              ) : (
+                <>
+                  <div
+                    style={{
+                      marginTop: 16,
+                      background: C.panel2,
+                      border: `1px solid ${C.line}`,
+                      borderRadius: 3,
+                      padding: "20px",
+                    }}
+                  >
+                    <div style={{ ...label, marginBottom: 12 }}>Model answer</div>
+                    {q.a.split("\n\n").map((p, i) => (
+                      <p key={i} style={{ fontSize: 15.5, lineHeight: 1.65, margin: i ? "14px 0 0" : 0, color: "#D5DFEA" }}>
+                        {p}
+                      </p>
+                    ))}
+                  </div>
+                  <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+                    {[
+                      { ok: true, t: "Got it", c: C.green },
+                      { ok: false, t: "Missed it", c: C.red },
+                    ].map((b) => (
+                      <button
+                        key={b.t}
+                        onClick={() => grade(b.ok)}
+                        style={{
+                          flex: 1,
+                          padding: "16px",
+                          background: b.c + "18",
+                          border: `1px solid ${b.c}`,
+                          color: b.c,
+                          borderRadius: 3,
+                          fontFamily: mono,
+                          fontSize: 13,
+                          letterSpacing: "0.12em",
+                          textTransform: "uppercase",
+                          cursor: "pointer",
+                        }}
+                      >
+                        {b.t}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              <button
+                onClick={() => setStage("summary")}
+                style={{
+                  marginTop: 22,
+                  fontFamily: mono,
+                  fontSize: 12,
+                  color: C.muted,
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: 0,
+                }}
+              >
+                End session
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      const right = results.filter((r) => r.ok).length;
+      const missed = results.filter((r) => !r.ok);
+      const byTopic = {};
+      results.forEach((r) => {
+        byTopic[r.t] = byTopic[r.t] || { n: 0, ok: 0 };
+        byTopic[r.t].n++;
+        if (r.ok) byTopic[r.t].ok++;
+      });
+
+      return (
+        <div style={shell}>
+          <div style={{ maxWidth: 720, margin: "0 auto" }}>
+            <div style={label}>Session closed</div>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 26 }}>
+              <span style={{ fontFamily: mono, fontSize: 52, fontWeight: 700, color: C.gold, lineHeight: 1 }}>
+                {results.length ? Math.round((right / results.length) * 100) : 0}%
+              </span>
+              <span style={{ fontFamily: mono, fontSize: 14, color: C.muted }}>
+                {right} of {results.length}
+              </span>
+            </div>
+
+            <div style={{ ...label }}>By coverage</div>
+            <div style={{ marginBottom: 30 }}>
+              {Object.entries(byTopic).map(([t, v]) => (
+                <div key={t} style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 0", borderBottom: `1px solid ${C.line}` }}>
+                  <span style={{ fontSize: 14, flex: 1 }}>{t}</span>
+                  <div style={{ width: 90, height: 4, background: C.line, borderRadius: 2, overflow: "hidden" }}>
+                    <div style={{ width: `${(v.ok / v.n) * 100}%`, height: "100%", background: v.ok / v.n >= 0.7 ? C.green : C.gold }} />
+                  </div>
+                  <span style={{ fontFamily: mono, fontSize: 12, color: C.muted, width: 42, textAlign: "right" }}>
+                    {v.ok}/{v.n}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {missed.length > 0 && (
+              <>
+                <div style={label}>To revisit</div>
+                <div style={{ marginBottom: 26 }}>
+                  {missed.map((m) => (
+                    <div key={m.id} style={{ borderBottom: `1px solid ${C.line}` }}>
+                      <button
+                        onClick={() => setExpanded(expanded === m.id ? null : m.id)}
+                        style={{
+                          width: "100%",
+                          textAlign: "left",
+                          background: "none",
+                          border: "none",
+                          color: C.text,
+                          padding: "13px 0",
+                          cursor: "pointer",
+                          fontFamily: serif,
+                          fontSize: 16,
+                          lineHeight: 1.4,
+                          display: "flex",
+                          gap: 10,
+                        }}
+                      >
+                        <span style={{ color: C.red, fontFamily: mono, fontSize: 13 }}>{expanded === m.id ? "−" : "+"}</span>
+                        {m.q}
+                      </button>
+                      {expanded === m.id && (
+                        <div style={{ paddingBottom: 16 }}>
+                          {m.a.split("\n\n").map((p, i) => (
+                            <p key={i} style={{ fontSize: 15, lineHeight: 1.65, margin: i ? "12px 0 0" : 0, color: "#C7D3E0" }}>
+                              {p}
+                            </p>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              {missed.length > 0 && (
+                <button
+                  onClick={() => start(shuffle(missed))}
+                  style={{
+                    flex: 1,
+                    minWidth: 160,
+                    padding: "15px",
+                    background: C.gold,
+                    color: C.ink,
+                    border: "none",
+                    borderRadius: 3,
+                    fontFamily: mono,
+                    fontSize: 12.5,
+                    letterSpacing: "0.12em",
+                    textTransform: "uppercase",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  Drill the {missed.length} missed
+                </button>
+              )}
+              <button
+                onClick={() => setStage("setup")}
+                style={{
+                  flex: 1,
+                  minWidth: 160,
+                  padding: "15px",
+                  background: "transparent",
+                  color: C.muted,
+                  border: `1px solid ${C.line}`,
+                  borderRadius: 3,
+                  fontFamily: mono,
+                  fontSize: 12.5,
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  cursor: "pointer",
+                }}
+              >
+                New session
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     const root = ReactDOM.createRoot(document.getElementById("root"));
     root.render(<App />);
   </script>

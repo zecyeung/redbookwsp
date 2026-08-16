@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Analyst Question Book</title>
+  <!-- React & Babel CDNs -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body style="margin: 0; background: #0A121C;">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    // 1. Storage shim for persistence
+    window.storage = {
+      get: async (key) => ({ value: localStorage.getItem(key) }),
+      set: async (key, val) => localStorage.setItem(key, val),
+    };
+
+    // 2. React hooks injection
+    const { useState, useEffect, useMemo, useCallback } = React;
+
+    // 3. Paste the entire code here (remove the top `import React...` line)
+    // [PASTE BANK, APP COMPONENT, ETC. HERE]
+
+    // 4. Render to DOM
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<App />);
+  </script>
+</body>
+</html>
